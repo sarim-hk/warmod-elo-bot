@@ -35,7 +35,7 @@ async def on_ready():
 
 @tasks.loop(seconds=1)
 async def data_parser():
-    gamestats = parselogfiles.run()
+    gamestats = parselogfiles.run(PATH=None)
     if gamestats:
         compiledata.run(gamestats, c, conn)
 
