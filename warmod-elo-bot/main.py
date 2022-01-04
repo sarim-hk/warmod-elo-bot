@@ -1,5 +1,6 @@
 import parselogfiles
 import compiledata
+import queries
 
 import discord
 from discord.ext import commands
@@ -12,6 +13,11 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('discord')
 logger.setLevel(logging.ERROR)
+
+import sqlite3
+conn = sqlite3.connect("elo.db")
+c = conn.cursor()
+queries.create_table(c, conn)
 
 def open_key():
     with open("keys.txt", "r") as f:
@@ -26,7 +32,8 @@ async def on_ready():
 @tasks.loop(seconds=10)
 async def data_parser():
     gamestats = parselogfiles.run()
-    compiledata.run(gamestats)
+    if gamestats:
+        compiledata.run(gamestats, c, conn)
 
 if __name__ == "__main__":
     data_parser.start()

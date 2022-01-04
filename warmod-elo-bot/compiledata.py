@@ -1,6 +1,6 @@
 import queries
 
-def run(gamestats):
+def run(gamestats, c, conn):
     # updating elo
     winner_team_id, loser_team_id = find_winning_team_id(gamestats)
     add_players_to_db_if_not_exist(gamestats, c, conn)
@@ -17,8 +17,7 @@ def run(gamestats):
     conn.commit()
 
     # updating kda and clutches
-    for player_id in list(gamestats["playerstats"].keys()):
-        print(player_id)
+    for player_id in gamestats["playerstats"]:
         kills, deaths, assists = gamestats["playerstats"][player_id]["kills"], gamestats["playerstats"][player_id]["deaths"], gamestats["playerstats"][player_id]["assists"]
         v1, v2, v3 = gamestats["playerstats"][player_id]["v1"], gamestats["playerstats"][player_id]["v2"], gamestats["playerstats"][player_id]["v3"]
         headshots = gamestats["playerstats"][player_id]["headshots"]
@@ -51,7 +50,7 @@ def get_avg_team_elo(gamestats, c):
             teamelo[gamestats["playerstats"][player_id]["team_id"]].append(player_elo)
 
     for team_id in teamelo:
-        teamelo[team_id] = teamelo[team_id] / len(teamelo[team_id])
+        teamelo[team_id] = sum(teamelo[team_id]) / len(teamelo[team_id])
     return teamelo
 
 def get_win_chances(teamelo, winner_team_id, loser_team_id):
