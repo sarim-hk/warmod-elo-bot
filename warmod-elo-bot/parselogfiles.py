@@ -43,19 +43,19 @@ def run(PATH=None):
                     mark_as_parsed(filename)
                     return {"playerstats": playerstats, "teamstats": teamstats}
                 else:
-                    mark_as_parsed(filename)                    
-                    logging.debug("Teams too small.")
+                    mark_as_parsed(filename)
+                    logging.debug("Teams too small or big.")
                     return False
 
     mark_as_parsed(filename)
     logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
     return False
 
-def get_oldest_unparsed_log(PATH):
+def get_oldest_unparsed_log(PATH=None):
     if PATH is None:
-        PATH = ".steam/steamapps/common/Counter-Strike Global Offensive Beta - Dedicated Server/csgo/warmod/"
-
-    files = glob.glob(f"{PATH}*.log")
+        PATH = "/root/.steam/steamapps/common/Counter-Strike Global Offensive Beta - Dedicated Server/csgo/warmod/"
+    PATH = f"{PATH}*.log"
+    files = glob.glob(PATH)
     if not files:   # if empty
         return False
 
@@ -136,10 +136,8 @@ def parse_clutches(playerstats, event):
 
 def parse_full_time(event):
     if event["event"] == "full_time":
-        teamstats = {
-        event["teams"][0]["team"]: event["teams"][0]["score"],
-        event["teams"][1]["team"]: event["teams"][1]["score"]
-        }
+        teamstats = {event["teams"][0]["team"]: event["teams"][0]["score"],
+                    event["teams"][1]["team"]: event["teams"][1]["score"]}
         full_time = True
     else:
         teamstats = None
@@ -148,6 +146,6 @@ def parse_full_time(event):
 
 def teams_too_small_or_big(playerstats):
     if len(playerstats) == 6:
-        return True
-    else:
         return False
+    else:
+        return True
