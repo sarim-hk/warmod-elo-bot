@@ -40,6 +40,8 @@ However the code can be easily modified to suit your needs in `parselogfiles.py 
 You either don't have Warmod logs set up, or you aren't starting your games correctly.  
 A server admin should use `!fs` or everyone must `!ready` for the log to be generated.
 
+Alternatively, you haven't set the correct log path. You can do this in `main.py > data_parser() > parselogfiles.run(PATH="PATH_HERE")`
+
 #### Why aren't 1v4s or 1v5s tracked?
 As aforementioned, the system is designed for 3v3 matches, where 1v4s/1v5s are impossible.  
 However, the code can again be modified by:  
