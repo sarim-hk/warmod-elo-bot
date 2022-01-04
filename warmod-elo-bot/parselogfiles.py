@@ -39,10 +39,11 @@ def run(PATH=None):
             if not full_time:
                 teamstats, full_time = parse_full_time(event)
             else:
-                if not teams_too_small(playerstats):
+                if not teams_too_small_or_big(playerstats):
                     mark_as_parsed(filename)
                     return {"playerstats": playerstats, "teamstats": teamstats}
                 else:
+                    mark_as_parsed(filename)                    
                     logging.debug("Teams too small.")
                     return False
 
@@ -145,8 +146,8 @@ def parse_full_time(event):
         full_time = False
     return teamstats, full_time
 
-def teams_too_small(playerstats):
-    if len(playerstats) < 6:
+def teams_too_small_or_big(playerstats):
+    if len(playerstats) == 6:
         return True
     else:
         return False
