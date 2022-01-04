@@ -11,7 +11,6 @@ def run(PATH=None):
     filename = get_oldest_unparsed_log(PATH)
 
     if not filename:
-        logging.debug("No files.")
         return False
 
     loglines = open_log(filename)
@@ -105,10 +104,12 @@ def parse_live_on_3(event):
 def parse_round_stats(playerstats, event):
     if event["event"] == "round_stats":
         if event["player"]["uniqueId"] not in playerstats:
-            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
+            if event["player"]["team"] != 0:
+                playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
             # disconnect before half time maybe
 
         playerstats[event["player"]["uniqueId"]]["kills"] += event["kills"]
+        playerstats[event["player"]["uniqueId"]]["assists"] += event["assists"]
         playerstats[event["player"]["uniqueId"]]["deaths"] += event["deaths"]
         playerstats[event["player"]["uniqueId"]]["headshots"] += event["headshots"]
         playerstats[event["player"]["uniqueId"]]["team_id"] = event["player"]["team"]
@@ -135,7 +136,7 @@ def parse_clutches(playerstats, event):
     return playerstats
 
 def parse_full_time(event):
-    if event["event"] == "full_time":
+    if event["event"] == "full_time" or event["event"] == "over_full_time":
         teamstats = {event["teams"][0]["team"]: event["teams"][0]["score"],
                     event["teams"][1]["team"]: event["teams"][1]["score"]}
         full_time = True
@@ -145,6 +146,7 @@ def parse_full_time(event):
     return teamstats, full_time
 
 def teams_too_small_or_big(playerstats):
+    logging.debug(playerstats.keys())
     if len(playerstats) == 6:
         return False
     else:
