@@ -2,21 +2,28 @@ import glob
 import logging
 import json
 import os
-logging.basicConfig(level=logging.DEBUG)
 
 def run(PATH=None):
     live_on_3 = False
     full_time = False
+    playerstats = {}
 
     filename = get_oldest_unparsed_log(PATH)
+
+    if not filename:
+        logging.debug("No files.")
+        return False
+
     loglines = open_log(filename)
 
     if not log_ended_yet(loglines):
-        return
+        logging.debug("Log not ended yet.")
+        return False
 
     if force_end_check(loglines):
         mark_as_parsed(filename)
-        return
+        logging.debug("Game was force ended.")
+        return False
 
     for index, line in enumerate(loglines):
         event = dictify_line(line)
@@ -32,8 +39,15 @@ def run(PATH=None):
             if not full_time:
                 teamstats, full_time = parse_full_time(event)
             else:
-                return {"playerstats": playerstats, "teamstats": teamstats}
+                if not teams_too_small(playerstats):
+                    mark_as_parsed(filename)
+                    return {"playerstats": playerstats, "teamstats": teamstats}
+                else:
+                    logging.debug("Teams too small.")
+                    return False
 
+    mark_as_parsed(filename)
+    logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
     return False
 
 def get_oldest_unparsed_log(PATH):
@@ -41,6 +55,9 @@ def get_oldest_unparsed_log(PATH):
         PATH = ".steam/steamapps/common/Counter-Strike Global Offensive Beta - Dedicated Server/csgo/warmod/"
 
     files = glob.glob(f"{PATH}*.log")
+    if not files:   # if empty
+        return False
+
     filename = min(files, key=os.path.getmtime)
     logging.debug(filename)
     return filename
@@ -90,16 +107,16 @@ def parse_round_stats(playerstats, event):
             playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
             # disconnect before half time maybe
 
-         playerstats[event["player"]["uniqueId"]]["kills"] += event["kills"]
-         playerstats[event["player"]["uniqueId"]]["deaths"] += event["deaths"]
-         playerstats[event["player"]["uniqueId"]]["headshots"] += event["headshots"]
-         playerstats[event["player"]["uniqueId"]]["team_id"] = event["player"]["team"]
+        playerstats[event["player"]["uniqueId"]]["kills"] += event["kills"]
+        playerstats[event["player"]["uniqueId"]]["deaths"] += event["deaths"]
+        playerstats[event["player"]["uniqueId"]]["headshots"] += event["headshots"]
+        playerstats[event["player"]["uniqueId"]]["team_id"] = event["player"]["team"]
     return playerstats
 
 def parse_player_suicide(playerstats, event):
     if event["event"] == "player_suicide":
         if event["player"]["uniqueId"] not in playerstats:
-            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0}
+            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
 
         playerstats[event["player"]["uniqueId"]]["kills"] -= 1
         playerstats[event["player"]["uniqueId"]]["deaths"] += 1
@@ -109,7 +126,7 @@ def parse_clutches(playerstats, event):
     vs = 0
     if event["event"] == "player_clutch":
         if event["player"]["uniqueId"] not in playerstats:
-            playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0}
+            playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
 
         if event["won"] == 1:
             vs = event["versus"]
@@ -119,11 +136,17 @@ def parse_clutches(playerstats, event):
 def parse_full_time(event):
     if event["event"] == "full_time":
         teamstats = {
-        event["teams"][0]["team"]: event["teams"][0]["score"]
+        event["teams"][0]["team"]: event["teams"][0]["score"],
         event["teams"][1]["team"]: event["teams"][1]["score"]
         }
         full_time = True
     else:
         teamstats = None
         full_time = False
-    return teamstats, is_full_time
+    return teamstats, full_time
+
+def teams_too_small(playerstats):
+    if len(playerstats) < 6:
+        return True
+    else:
+        return False
