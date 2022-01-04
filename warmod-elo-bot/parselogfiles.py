@@ -125,7 +125,6 @@ def parse_player_suicide(playerstats, event):
     return playerstats
 
 def parse_clutches(playerstats, event):
-    vs = 0
     if event["event"] == "player_clutch":
         if event["player"]["uniqueId"] not in playerstats:
             playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
