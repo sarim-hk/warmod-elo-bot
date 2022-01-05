@@ -6,7 +6,6 @@ import os
 def run(PATH=None):
     live_on_3 = False
     full_time = False
-    match_reset = False
     playerstats = {}
 
     filename = get_oldest_unparsed_log(PATH)
@@ -35,24 +34,22 @@ def run(PATH=None):
             playerstats = parse_round_stats(playerstats, event)
             playerstats = parse_player_suicide(playerstats, event)
             playerstats = parse_clutches(playerstats, event)
-            teamstats, full_time = parse_full_time(event)
 
-            if not match_reset:
-                match_reset = parse_match_reset(event)
-                if not full_time:
-                    teamstats, full_time = parse_full_time(event)
-            else:
-                if not teams_too_small_or_big(playerstats):
-                    mark_as_parsed(filename)
-                    return {"playerstats": playerstats, "teamstats": teamstats}
-                else:
-                    mark_as_parsed(filename)
-                    logging.debug("Teams too small or big.")
-                    return False
+            if not full_time:
+                teamstats, full_time = parse_full_time(event)
 
-    mark_as_parsed(filename)
-    logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
-    return False
+    if full_time and live_on_3:
+        if not teams_too_small_or_big(playerstats):
+            mark_as_parsed(filename)
+            return {"playerstats": playerstats, "teamstats": teamstats}
+        else:
+            mark_as_parsed(filename)
+            logging.debug("Teams too small or big.")
+            return False
+    else:
+        mark_as_parsed(filename)
+        logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
+        return False
 
 def get_oldest_unparsed_log(PATH=None):
     if PATH is None:
@@ -147,12 +144,6 @@ def parse_full_time(event):
         teamstats = None
         full_time = False
     return teamstats, full_time
-
-def parse_match_reset(event):
-    if event["event"] == "match_reset":
-        return True
-    else:
-        return False
 
 def teams_too_small_or_big(playerstats):
     logging.debug(playerstats.keys())
