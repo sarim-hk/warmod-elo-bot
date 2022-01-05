@@ -5,6 +5,7 @@ import os
 
 def run(PATH=None):
     live_on_3 = False
+    full_time = False
     match_reset = False
     playerstats = {}
 
@@ -34,9 +35,12 @@ def run(PATH=None):
             playerstats = parse_round_stats(playerstats, event)
             playerstats = parse_player_suicide(playerstats, event)
             playerstats = parse_clutches(playerstats, event)
+            teamstats, full_time = parse_full_time(event)
 
             if not match_reset:
-                teamstats, match_reset = parse_match_reset(event)
+                match_reset = parse_match_reset(event)
+                if not full_time:
+                    teamstats, full_time = parse_full_time(event)
             else:
                 if not teams_too_small_or_big(playerstats):
                     mark_as_parsed(filename)
@@ -47,7 +51,7 @@ def run(PATH=None):
                     return False
 
     mark_as_parsed(filename)
-    logging.debug(f"Didn't go live or didn't reach match reset: match_reset = {match_reset}, live_on_3 = {live_on_3}")
+    logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
     return False
 
 def get_oldest_unparsed_log(PATH=None):
@@ -134,15 +138,21 @@ def parse_clutches(playerstats, event):
             playerstats[event["player"]["uniqueId"]][f"v{vs}"] += 1
     return playerstats
 
-def parse_match_reset(event):
-    if event["event"] == "match_reset":
+def parse_full_time(event):
+    if event["event"] == "full_time" or event["event"] == "over_full_time":
         teamstats = {event["teams"][0]["team"]: event["teams"][0]["score"],
                     event["teams"][1]["team"]: event["teams"][1]["score"]}
-        match_reset = True
+        full_time = True
     else:
         teamstats = None
-        match_reset = False
-    return teamstats, match_reset
+        full_time = False
+    return teamstats, full_time
+
+def parse_match_reset(event):
+    if event["event"] == "match_reset":
+        return True
+    else:
+        return False
 
 def teams_too_small_or_big(playerstats):
     logging.debug(playerstats.keys())
