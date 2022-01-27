@@ -26,6 +26,8 @@ def run(PATH=None):
 
     for index, line in enumerate(loglines):
         event = dictify_line(line)
+        if not event:
+            continue
 
         if not live_on_3:
             live_on_3 = parse_live_on_3(event)
@@ -96,6 +98,7 @@ def dictify_line(line):
         event = json.loads(line)
     except Exception as e:
         logging.error("Exception occurred, probably a player_say event:", exc_info=True)
+        return False
     return event
 
 def parse_live_on_3(event):

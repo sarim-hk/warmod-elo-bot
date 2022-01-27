@@ -2,6 +2,7 @@ import parselogfiles
 import compiledata
 import queries
 import topelo
+import scoreboard
 
 import discord
 from discord.ext import commands
@@ -36,8 +37,13 @@ async def on_ready():
 @tasks.loop(seconds=1)
 async def data_parser():
     gamestats = parselogfiles.run(PATH=None)
+
     if gamestats:
         compiledata.run(gamestats, c, conn)
+        pages = scoreboard.run(gamestats, steamkey)
+        channel = bot.get_channel(623231817725771807)
+        for page in pages:
+            await channel.send(page)
 
 @bot.command()
 async def top_elo(ctx):
