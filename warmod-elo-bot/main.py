@@ -36,14 +36,16 @@ async def on_ready():
 
 @tasks.loop(seconds=1)
 async def data_parser():
-    gamestats = parselogfiles.run(PATH=None)
+    if not bot.is_ready():
+        return
+
+    gamestats, filename = parselogfiles.run(PATH=None)
 
     if gamestats:
+        channel = bot.get_channel(936644950815277156)
+        pages = scoreboard.run(gamestats, filename, c, steamkey)
         compiledata.run(gamestats, c, conn)
-        pages = scoreboard.run(gamestats, steamkey)
-        channel = bot.get_channel(623231817725771807)
-        for page in pages:
-            await channel.send(page)
+        await channel.send(pages)
 
 @bot.command()
 async def top_elo(ctx):
