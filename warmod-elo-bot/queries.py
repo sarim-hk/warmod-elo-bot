@@ -26,7 +26,7 @@ def insert_default_values(player_id, c, conn):
     c.execute(sql_query, (player_id,))
     conn.commit()
 
-def update_elo_wins_losses(net_elo, win, player_id, c):
+def update_elo_wins_losses(net_elo_change, win, player_id, c):
     if win:
         sql_query = f"""
                     UPDATE user_data
@@ -41,7 +41,7 @@ def update_elo_wins_losses(net_elo, win, player_id, c):
                         LOSS = LOSS + 1
                     WHERE USER_ID = ?
                     """
-    c.execute(sql_query, (net_elo, player_id))
+    c.execute(sql_query, (net_elo_change, player_id))
 
 def update_kda_clutches(kills, assists, deaths, v1, v2, v3, headshots, player_id, c, conn):
     sql_query = f"""UPDATE user_data
