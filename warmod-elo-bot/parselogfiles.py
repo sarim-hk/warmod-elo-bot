@@ -4,54 +4,55 @@ import json
 import os
 
 def run(PATH=None):
-    live_on_3 = False
     full_time = False
     playerstats = {}
 
     filename = get_oldest_unparsed_log(PATH)
 
     if not filename:
-        return False
+        return False, None
 
     loglines = open_log(filename)
-
-    if not log_ended_yet(loglines):
-        logging.debug("Log not ended yet.")
-        return False
 
     if force_end_check(loglines):
         mark_as_parsed(filename)
         logging.debug("Game was force ended.")
-        return False
+        return False, None
+
+    if not log_ended_yet(loglines):
+        logging.debug("Log not ended yet.")
+        return False, None
+
+    filesize = os.path.getsize(filename)
+    if filesize < 400000:
+        logging.debug("File size too small.")
+        mark_as_parsed(filename)
+        return False, None
 
     for index, line in enumerate(loglines):
         event = dictify_line(line)
         if not event:
             continue
 
-        if not live_on_3:
-            live_on_3 = parse_live_on_3(event)
+        playerstats = parse_round_stats(playerstats, event)
+        playerstats = parse_player_suicide(playerstats, event)
+        playerstats = parse_clutches(playerstats, event)
 
-        elif live_on_3:
-            playerstats = parse_round_stats(playerstats, event)
-            playerstats = parse_player_suicide(playerstats, event)
-            playerstats = parse_clutches(playerstats, event)
+        if not full_time:
+            teamstats, full_time = parse_full_time(event)
 
-            if not full_time:
-                teamstats, full_time = parse_full_time(event)
-
-    if full_time and live_on_3:
+    if full_time:
         if not teams_too_small_or_big(playerstats):
             mark_as_parsed(filename)
-            return {"playerstats": playerstats, "teamstats": teamstats}
+            return {"playerstats": playerstats, "teamstats": teamstats}, filename
         else:
             mark_as_parsed(filename)
             logging.debug("Teams too small or big.")
-            return False
+            return False, None
     else:
         mark_as_parsed(filename)
-        logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}, live_on_3 = {live_on_3}")
-        return False
+        logging.debug(f"Didn't go live or didn't reach full time: full_time = {full_time}")
+        return False, None
 
 def get_oldest_unparsed_log(PATH=None):
     if PATH is None:
@@ -97,13 +98,9 @@ def dictify_line(line):
     try:
         event = json.loads(line)
     except Exception as e:
-        logging.error("Exception occurred, probably a player_say event:", exc_info=True)
+        logging.error("Exception occurred, probably a player_say event")
         return False
     return event
-
-def parse_live_on_3(event):
-    if event["event"] == "live_on_3":
-        return True
 
 def parse_round_stats(playerstats, event):
     if event["event"] == "round_stats":
@@ -149,7 +146,6 @@ def parse_full_time(event):
     return teamstats, full_time
 
 def teams_too_small_or_big(playerstats):
-    logging.debug(playerstats.keys())
     if len(playerstats) == 6:
         return False
     else:
