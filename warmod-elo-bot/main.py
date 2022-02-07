@@ -26,6 +26,7 @@ def open_key():
         keys = f.readlines()
         discordkey = keys[0].split(":")[0]
         steamkey = keys[1].split(":")[0]
+        match_history_channel_id = int(keys[2].split(":")[0])
     return discordkey, steamkey
 
 discordkey, steamkey = open_key()
@@ -42,7 +43,7 @@ async def data_parser():
     gamestats, filename = parselogfiles.run(PATH=None)
 
     if gamestats:
-        channel = bot.get_channel(936644950815277156)
+        channel = bot.get_channel(match_history_channel_id)
         pages = scoreboard.run(gamestats, filename, c, steamkey)
         compiledata.run(gamestats, c, conn)
         await channel.send(pages)
