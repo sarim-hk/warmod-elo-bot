@@ -22,8 +22,9 @@ Must be run on the same machine as the CS:GO server.
 A `keys.txt` file must also be created in `warmod-elo-bot`, formatted as such:
 
 ```
-DISCORDBOTTOKEN: descriptor
-STEAMAPIKEY: descriptor
+DISCORDBOTTOKEN: n/a
+STEAMAPIKEY: n/a
+DISCORDCHANNELID: discord channel id to log matches played in
 ```
 ## Screenshots
 
