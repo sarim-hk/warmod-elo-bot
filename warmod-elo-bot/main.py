@@ -27,9 +27,9 @@ def open_key():
         discordkey = keys[0].split(":")[0]
         steamkey = keys[1].split(":")[0]
         match_history_channel_id = int(keys[2].split(":")[0])
-    return discordkey, steamkey
+    return discordkey, steamkey, match_history_channel_id
 
-discordkey, steamkey = open_key()
+discordkey, steamkey, match_history_channel_id = open_key()
 
 @bot.event
 async def on_ready():
