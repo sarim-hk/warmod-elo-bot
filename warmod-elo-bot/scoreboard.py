@@ -8,15 +8,9 @@ def run(gamestats, filename, c, steamkey):
 
     winner_team_id, loser_team_id = cd.find_winning_team_id(gamestats)
 
-    pprint.pprint(gamestats)
-    print(winner_team_id, loser_team_id)
-
     teamelo = cd.get_avg_team_elo(gamestats, c)
-    print(teamelo)
     win_percentage = cd.get_win_chances(teamelo, winner_team_id, loser_team_id)
-    print(win_percentage)
     net_elo_change = int(50 * (1-win_percentage))
-    print(net_elo_change)
 
     steamids = list(gamestats["playerstats"])
     for steamid in steamids:
@@ -26,37 +20,27 @@ def run(gamestats, filename, c, steamkey):
 
     scoreboard = {"team2": [], "team3": []}
     for player in gamestats["playerstats"]:
-        team_id = gamestats["playerstats"][player]["team_id"]
         gamestats["playerstats"][player]["Score"] = None
+
+        team_id = gamestats["playerstats"][player]["team_id"]
         scoreboard[f"team{team_id}"].append(list(gamestats["playerstats"][player].values()))
 
     pages = []
-    for team in scoreboard:
-        team_id = int(team[4])
-
+    for team_name in scoreboard:
+        team_id = int(team_name[4])
         score = gamestats["teamstats"][team_id]
+
         if team_id == winner_team_id:
-            page = tabulate((team[:8]+team[9:] for team in scoreboard[team]),
-            headers=["Name", "Kills", "Deaths", "Assists", "1v1", "1v2", "1v3", "Headshots", f"Score: {score}  ELO: +{net_elo_change}"])
+            page = tabulate((player[:12]+player[13:] for player in scoreboard[team_name]),
+            headers=["Name", "Kills", "Deaths", "Assists", "1v1", "1v2", "1v3", "Headshots", "EF", "EF Duration", "HE DMG", "Molotov DMG", f"Score: {score}  ELO: +{net_elo_change}"])
         else:
-            page = tabulate((team[:8]+team[9:] for team in scoreboard[team]),
-            headers=["Name", "Kills", "Deaths", "Assists", "1v1", "1v2", "1v3", "Headshots", f"Score: {score}  ELO: -{net_elo_change}"])
+            page = tabulate((player[:12]+player[13:] for player in scoreboard[team_name]),
+            headers=["Name", "Kills", "Deaths", "Assists", "1v1", "1v2", "1v3", "Headshots", "EF", "EF Duration", "HE DMG", "Molotov DMG", f"Score: {score}  ELO: -{net_elo_change}"])
 
         date = filename_to_date(filename)
         pages.append(page)
     pages = "\n\n".join(pages)
     pages = f"```glsl\n{date}\n\n{pages}```"
-
-    """
-    f = open("test.txt", "a")
-    f.write(f"{teamelo[winner_team_id]}, {teamelo[loser_team_id]}\n")
-    f.write(f"{win_percentage}\n")
-    f.write(f"{net_elo_change}\n")
-    f.write("\n")
-    f.write(pages)
-    f.write("\n\n\n")
-    f.close()
-    """
 
     return pages
 

@@ -19,9 +19,13 @@ def run(steamkey, c):
         user = calculate_kd(user)
         user = calculate_win_loss(user)
         user = calculate_hs(user)
+        user = calculate_ud_per_game(user)
+        user = calculate_ef_per_game(user)
+        user = calculate_ef_time_per_game(user)
+
         final.append(user)
 
-    table = tabulate(final, headers=["Name", "ELO", "Kills", "Assists", "Death", "K/D", "HS", "1v1", "1v2", "1v3", "Wins", "Losses", "W/L"])
+    table = tabulate(final, headers=["Name", "ELO", "Kills", "Assists", "Death", "K/D", "HS", "1v1", "1v2", "1v3", "AVG EF", "AVG EF Time", "AVG UD", "Wins", "Losses", "W/L"])
     pages = re.compile("(?:^.*$\n?){1,12}",re.M).findall(table)
     pages = [f"```glsl\n{page}```" for page in pages]
     return pages
@@ -65,7 +69,6 @@ def remove_emoji(text):
                            "]+", flags = re.UNICODE)
     return regrex_pattern.sub(r'',text)
 
-
 def calculate_kd(user):
     if user[2] == 0:
         user.insert(5, 0)
@@ -81,11 +84,32 @@ def calculate_win_loss(user):
     elif user[11] == 0:
         user.append("100%")
     else:
-        user.append(str(round((user[10] / (user[10] + user[11])) * 100, 2)) + "%")
+        user.append(str(round((user[14] / (user[14] + user[15])) * 100, 2)) + "%")
     return user
 
 def calculate_hs(user):
     headshots = int(user[9])
     user.pop(9)
     user.insert(6, str(round(((headshots / user[2]) * 100), 2)) + "%")
+    return user
+
+def calculate_ud_per_game(user):
+    user[12] = user[12] + user[13]
+    user.pop(13)
+
+    games = user[13] + user[14]
+    user[12] = round(user[12]/games)
+
+    return user
+
+def calculate_ef_per_game(user):
+    games = user[13] + user[14]
+    user[10] = round(user[10]/games)
+
+    return user
+
+def calculate_ef_time_per_game(user):
+    games = user[13] + user[14]
+    user[11] = round(user[11]/games)
+
     return user

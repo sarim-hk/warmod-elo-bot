@@ -19,8 +19,9 @@ def run(gamestats, c, conn):
     for player_id in gamestats["playerstats"]:
         kills, deaths, assists = gamestats["playerstats"][player_id]["kills"], gamestats["playerstats"][player_id]["deaths"], gamestats["playerstats"][player_id]["assists"]
         v1, v2, v3 = gamestats["playerstats"][player_id]["v1"], gamestats["playerstats"][player_id]["v2"], gamestats["playerstats"][player_id]["v3"]
-        headshots = gamestats["playerstats"][player_id]["headshots"]
-        queries.update_kda_clutches(kills, deaths, assists, v1, v2, v3, headshots, player_id, c, conn)
+        headshots, ef, ef_duration = gamestats["playerstats"][player_id]["headshots"], gamestats["playerstats"][player_id]["ef"], gamestats["playerstats"][player_id]["ef_duration"],
+        he_ud, inferno_ud = gamestats["playerstats"][player_id]["he_ud"], gamestats["playerstats"][player_id]["inferno_ud"]
+        queries.update_kda_clutches_util(kills, assists, deaths, v1, v2, v3, headshots, ef, ef_duration, he_ud, inferno_ud, player_id, c, conn)
 
 
 def find_winning_team_id(gamestats):
@@ -53,7 +54,7 @@ def get_avg_team_elo(gamestats, c):
 
         teamelo[gamestats["playerstats"][player_id]["team_id"]].append(player_elo)
 
-    print(teamelo)
+    #print(teamelo)
     for team_id in teamelo:
         teamelo[team_id] = sum(teamelo[team_id]) / len(teamelo[team_id])
     return teamelo

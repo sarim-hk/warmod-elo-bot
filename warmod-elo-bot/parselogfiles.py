@@ -37,6 +37,8 @@ def run(PATH=None):
         playerstats = parse_round_stats(playerstats, event)
         playerstats = parse_player_suicide(playerstats, event)
         playerstats = parse_clutches(playerstats, event)
+        playerstats = parse_flashes(playerstats, index, loglines, event)
+        playerstats = parse_player_hurt_util(playerstats, event)
 
         if not full_time:
             teamstats, full_time = parse_full_time(event)
@@ -48,6 +50,7 @@ def run(PATH=None):
         else:
             mark_as_parsed(filename)
             logging.debug("Teams too small or big.")
+            print({"playerstats": playerstats, "teamstats": teamstats})
             return False, None
     else:
         mark_as_parsed(filename)
@@ -62,7 +65,8 @@ def get_oldest_unparsed_log(PATH=None):
     if not files:   # if empty
         return False
 
-    filename = min(files, key=os.path.getmtime)
+    files = sorted(files)
+    filename = files[0]
     logging.debug(filename)
     return filename
 
@@ -102,11 +106,56 @@ def dictify_line(line):
         return False
     return event
 
+def parse_player_hurt_util(playerstats, event):
+    if event["event"] == "player_hurt":
+        if event["weapon"] == "inferno":
+            if event["attacker"]["uniqueId"] not in playerstats:
+                playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
+            playerstats[event["attacker"]["uniqueId"]]["inferno_ud"] += event["damage"]
+
+        elif event["weapon"] == "hegrenade":
+            if event["attacker"]["uniqueId"] not in playerstats:
+                playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
+            playerstats[event["attacker"]["uniqueId"]]["he_ud"] += event["damage"]
+    return playerstats
+
+def parse_flashes(playerstats, index, loglines, event):
+    index_increment = 0
+    if event["event"] == "grenade_detonate" and event["grenade"] == "flashbang":
+        timestamp = event["timestamp"]
+        thrower = event["player"]["uniqueId"]
+        thrower_team = event["player"]["team"]
+    else:
+        return playerstats
+
+    while True:
+        index_increment += 1
+        event = dictify_line(loglines[index+index_increment])
+        try:
+            if event["timestamp"] == timestamp:
+                if event["event"] == "player_blind":
+                    if thrower_team != event["player"]["team"]:
+                        if thrower not in playerstats:
+                            playerstats[thrower] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
+
+                        playerstats[thrower]["ef"] += 1
+                        playerstats[thrower]["ef_duration"] += event["duration"]
+            else:
+                break
+        except Exception:
+          print(event)
+
+        else:
+            break
+
+    return playerstats
+
 def parse_round_stats(playerstats, event):
     if event["event"] == "round_stats":
         if event["player"]["uniqueId"] not in playerstats:
+            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
             if event["player"]["team"] != 0:
-                playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
+                playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
             # disconnect before half time maybe
 
         playerstats[event["player"]["uniqueId"]]["kills"] += event["kills"]
@@ -119,7 +168,7 @@ def parse_round_stats(playerstats, event):
 def parse_player_suicide(playerstats, event):
     if event["event"] == "player_suicide":
         if event["player"]["uniqueId"] not in playerstats:
-            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
+            playerstats[event["player"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
 
         playerstats[event["player"]["uniqueId"]]["kills"] -= 1
         playerstats[event["player"]["uniqueId"]]["deaths"] += 1
@@ -128,11 +177,15 @@ def parse_player_suicide(playerstats, event):
 def parse_clutches(playerstats, event):
     if event["event"] == "player_clutch":
         if event["player"]["uniqueId"] not in playerstats:
-            playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "team_id": None}
+            playerstats[event["attacker"]["uniqueId"]] = {"kills": 0, "deaths": 0, "assists": 0, "v1": 0, "v2": 0, "v3": 0, "headshots": 0, "ef": 0, "ef_duration": 0, "he_ud": 0, "inferno_ud": 0, "team_id": None}
 
         if event["won"] == 1:
             vs = event["versus"]
-            playerstats[event["player"]["uniqueId"]][f"v{vs}"] += 1
+            try:
+                playerstats[event["player"]["uniqueId"]][f"v{vs}"] += 1
+            except KeyError:
+                pass
+
     return playerstats
 
 def parse_full_time(event):

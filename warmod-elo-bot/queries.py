@@ -10,6 +10,10 @@ def create_table(c, conn):
     v2              INTEGER (0, 20),
     v3              INTEGER (0, 20),
     HEADSHOTS       INTEGER (0, 20),
+    EF              INTEGER (0, 20),
+    EF_DURATION     INTEGER (0, 20),
+    HE_UD           INTEGER (0, 20),
+    INFERNO_UD      INTEGER (0, 20),
     WIN             INTEGER (0, 20),
     LOSS            INTEGER (0, 20)
     );"""
@@ -22,7 +26,7 @@ def elo_from_user_id(player_id, c):
     return user_data
 
 def insert_default_values(player_id, c, conn):
-    sql_query = "INSERT OR REPLACE INTO user_data (USER_ID, ELO, KILLS, DEATHS, ASSISTS, v1, v2, v3, HEADSHOTS, WIN, LOSS) VALUES (?, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0);"
+    sql_query = "INSERT OR REPLACE INTO user_data (USER_ID, ELO, KILLS, DEATHS, ASSISTS, v1, v2, v3, HEADSHOTS, EF, EF_DURATION, HE_UD, INFERNO_UD, WIN, LOSS) VALUES (?, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);"
     c.execute(sql_query, (player_id,))
     conn.commit()
 
@@ -43,7 +47,7 @@ def update_elo_wins_losses(net_elo_change, win, player_id, c):
                     """
     c.execute(sql_query, (net_elo_change, player_id))
 
-def update_kda_clutches(kills, assists, deaths, v1, v2, v3, headshots, player_id, c, conn):
+def update_kda_clutches_util(kills, assists, deaths, v1, v2, v3, headshots, ef, ef_duration, he_ud, inferno_ud, player_id, c, conn):
     sql_query = f"""UPDATE user_data
                 SET KILLS = KILLS + ?,
                 DEATHS = DEATHS + ?,
@@ -51,10 +55,14 @@ def update_kda_clutches(kills, assists, deaths, v1, v2, v3, headshots, player_id
                 v1 = v1 + ?,
                 v2 = v2 + ?,
                 v3 = v3 + ?,
-                HEADSHOTS = HEADSHOTS + ?
+                HEADSHOTS = HEADSHOTS + ?,
+                EF = EF + ?,
+                EF_DURATION = EF_DURATION + ?,
+                HE_UD = HE_UD + ?,
+                INFERNO_UD = INFERNO_UD + ?
                 WHERE USER_ID = ?
                 """
-    c.execute(sql_query, (kills, deaths, assists, v1, v2, v3, headshots, player_id))
+    c.execute(sql_query, (kills, assists, deaths, v1, v2, v3, headshots, ef, ef_duration, he_ud, inferno_ud, player_id))
     conn.commit()
 
 def stats_from_user_data(c):
