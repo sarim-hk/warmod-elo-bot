@@ -1,6 +1,8 @@
 
 # [CS:GO] Warmod Stats Bot 
 
+NOT MAINTAINED DUE TO CS2 REPLACING CSGO
+
 Warmod Stats Bot is an elo and leaderboard system written in Python. It reads [Warmod](https://forums.alliedmods.net/showthread.php?t=225474) .log files, processes the data and stores it in a database, accessible through Discord.
 
 * ELO system
